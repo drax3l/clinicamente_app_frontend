@@ -1,0 +1,77 @@
+{
+  "project_info": {
+    "project_number": "15136440422",
+    "firebase_url": "https://lacasainformatica-bba3e-default-rtdb.firebaseio.com",
+    "project_id": "lacasainformatica-bba3e",
+    "storage_bucket": "lacasainformatica-bba3e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:15136440422:android:ad991ef0aa8ab9fc432da7",
+        "android_client_info": {
+          "package_name": "com.clinicamente.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "15136440422-btj8s1m5alsnqjrcai3fs9fcbldfqqli.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhaitCKWtj73s1c1ob3wjsPvmfREoejiA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "15136440422-btj8s1m5alsnqjrcai3fs9fcbldfqqli.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:15136440422:android:f65aaf6fba2146fd432da7",
+        "android_client_info": {
+          "package_name": "com.codequiz.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "15136440422-u1uk1636j7fdprda3hjcttpq7m98nfa1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.codequiz.app",
+            "certificate_hash": "e7d814568677eeae51cbad127ec505cdd792781b"
+          }
+        },
+        {
+          "client_id": "15136440422-btj8s1m5alsnqjrcai3fs9fcbldfqqli.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhaitCKWtj73s1c1ob3wjsPvmfREoejiA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "15136440422-btj8s1m5alsnqjrcai3fs9fcbldfqqli.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
