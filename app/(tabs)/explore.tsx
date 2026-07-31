@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
-  ScrollView,
-  Platform,
-  TextInput,
-  Alert,
-} from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import {
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 const CATEGORIES = ['Todos', 'Ansiedad', 'Depresión', 'Pareja', 'Autoestima', 'Infantil'];
@@ -139,22 +138,27 @@ export default function ExploreScreen() {
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" style={styles.searchIcon}>
-            <Path
-              d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z"
-              stroke="#657B76"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <Path
-              d="M21 21L16.65 16.65"
-              stroke="#657B76"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
+          <TouchableOpacity
+            onPress={() => router.push('/search')}
+            activeOpacity={0.7}
+          >
+            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" style={styles.searchIcon}>
+              <Path
+                d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z"
+                stroke="#657B76"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <Path
+                d="M21 21L16.65 16.65"
+                stroke="#657B76"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+          </TouchableOpacity>
           <TextInput
             style={styles.searchInput}
             placeholder="Buscar por nombre, especialidad..."
