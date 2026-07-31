@@ -11,37 +11,6 @@ import {
 } from 'react-native';
 import Svg, { Circle, Path, Ellipse } from 'react-native-svg';
 import { useRouter } from 'expo-router';
-import { Image } from 'expo-image';
-
-const SPECIALISTS = [
-  {
-    id: '1',
-    name: 'Dra. Sofía Romero',
-    specialty: 'Terapia Cognitivo-Conductual',
-    rating: '4.9',
-    reviews: '124',
-    image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300&h=300',
-    available: 'Hoy',
-  },
-  {
-    id: '2',
-    name: 'Dr. Alejandro Muñoz',
-    specialty: 'Neuropsicología Clínica',
-    rating: '4.8',
-    reviews: '98',
-    image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300&h=300',
-    available: 'Mañana',
-  },
-  {
-    id: '3',
-    name: 'Dra. Laura Torres',
-    specialty: 'Terapia de Pareja y Familiar',
-    rating: '5.0',
-    reviews: '142',
-    image: 'https://images.unsplash.com/photo-1594824813573-246434de83fb?auto=format&fit=crop&q=80&w=300&h=300',
-    available: 'Lunes',
-  },
-];
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -179,61 +148,6 @@ export default function HomeScreen() {
           </Svg>
         </View>
 
-        {/* Specialists Section */}
-        <View style={styles.specialistsSection}>
-          <View style={styles.specialistsHeader}>
-            <Text style={styles.specialistsTitle}>Psicólogos Destacados</Text>
-            <TouchableOpacity onPress={() => router.push('/explore' as any)}>
-              <Text style={styles.seeAllText}>Ver todos</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.specialistsScroll}
-            snapToInterval={292} // card width + gap
-            decelerationRate="fast"
-          >
-            {SPECIALISTS.map((specialist) => (
-              <TouchableOpacity
-                key={specialist.id}
-                style={styles.specialistCard}
-                activeOpacity={0.9}
-                onPress={() => {
-                  router.push('/explore' as any);
-                }}
-              >
-                <Image
-                  source={{ uri: specialist.image }}
-                  style={styles.specialistImage}
-                  contentFit="cover"
-                  transition={200}
-                />
-                <View style={styles.specialistInfo}>
-                  <View style={styles.ratingRow}>
-                    <Text style={styles.starIcon}>★</Text>
-                    <Text style={styles.ratingText}>{specialist.rating}</Text>
-                    <Text style={styles.reviewsText}>({specialist.reviews})</Text>
-                  </View>
-                  <Text style={styles.specialistName} numberOfLines={1}>
-                    {specialist.name}
-                  </Text>
-                  <Text style={styles.specialistSub} numberOfLines={1}>
-                    {specialist.specialty}
-                  </Text>
-                  <View style={styles.availabilityBadge}>
-                    <View style={styles.activeDot} />
-                    <Text style={styles.availabilityText}>
-                      Disponible: {specialist.available}
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
         {/* Bottom Actions Section */}
         <View style={styles.actionsSection}>
           {/* Primary Button */}
@@ -318,102 +232,7 @@ const styles = StyleSheet.create({
   illustrationContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 14,
-  },
-  specialistsSection: {
-    marginVertical: 18,
-    width: '100%',
-  },
-  specialistsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  specialistsTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1C2E2B',
-  },
-  seeAllText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#4E6E6B',
-  },
-  specialistsScroll: {
-    paddingRight: 28, // Allow scrolling past the last card nicely
-    gap: 12,
-  },
-  specialistCard: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    width: 280,
-    borderRadius: 20,
-    padding: 12,
-    alignItems: 'center',
-    shadowColor: '#2C4441',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  specialistImage: {
-    width: 72,
-    height: 72,
-    borderRadius: 16,
-    backgroundColor: '#E2ECE8',
-  },
-  specialistInfo: {
-    flex: 1,
-    marginLeft: 12,
-    justifyContent: 'center',
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  starIcon: {
-    color: '#FFB800',
-    fontSize: 14,
-    marginRight: 2,
-  },
-  ratingText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1C2E2B',
-  },
-  reviewsText: {
-    fontSize: 12,
-    color: '#8A9F9A',
-    marginLeft: 2,
-  },
-  specialistName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1C2E2B',
-    marginBottom: 2,
-  },
-  specialistSub: {
-    fontSize: 12,
-    color: '#657B76',
-    marginBottom: 6,
-  },
-  availabilityBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  activeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#2E7D32',
-    marginRight: 6,
-  },
-  availabilityText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#2E7D32',
+    marginVertical: 20,
   },
   actionsSection: {
     width: '100%',
