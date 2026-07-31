@@ -17,6 +17,33 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        <Stack.Screen
+          name="login"
+          options={{
+            title: 'Iniciar Sesión',
+            headerTintColor: '#4E6E6B',
+            headerStyle: { backgroundColor: '#EFF5F3' },
+            headerShadowVisible: false,
+          }}
+        />
+        <Stack.Screen
+          name="signup"
+          options={{
+            title: 'Crear Cuenta',
+            headerTintColor: '#4E6E6B',
+            headerStyle: { backgroundColor: '#EFF5F3' },
+            headerShadowVisible: false,
+          }}
+        />
+        <Stack.Screen
+          name="upload-docs"
+          options={{
+            title: 'Subir Documentación',
+            headerTintColor: '#4E6E6B',
+            headerStyle: { backgroundColor: '#EFF5F3' },
+            headerShadowVisible: false,
+          }}
+        />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

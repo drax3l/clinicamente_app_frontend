@@ -155,7 +155,7 @@ export default function HomeScreen() {
             style={styles.primaryButton}
             activeOpacity={0.88}
             onPress={() => {
-              // Action handler
+              router.push('/login' as any);
             }}
           >
             <Text style={styles.primaryButtonText}>Iniciar Sesión</Text>
@@ -175,7 +175,12 @@ export default function HomeScreen() {
           {/* Footer Link */}
           <View style={styles.footerRow}>
             <Text style={styles.footerText}>¿Eres psicólogo? </Text>
-            <TouchableOpacity activeOpacity={0.7}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                router.push('/upload-docs' as any);
+              }}
+            >
               <Text style={styles.footerLinkText}>Únete aquí</Text>
             </TouchableOpacity>
           </View>
