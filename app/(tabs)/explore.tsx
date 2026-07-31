@@ -244,35 +244,6 @@ export default function ExploreScreen() {
                   </View>
                 ))}
               </View>
-
-              {/* Divider */}
-              <View style={styles.divider} />
-
-              {/* Price & Action Row */}
-              <View style={styles.footerRow}>
-                <View style={styles.priceContainer}>
-                  <Text style={styles.priceLabel}>Sesión de 50 min</Text>
-                  <Text style={styles.priceValue}>
-                    {specialist.price}
-                    <Text style={styles.pricePeriod}> / sesión</Text>
-                  </Text>
-                </View>
-                <View style={styles.actionButtons}>
-                  <View style={[styles.statusIndicator, specialist.available === 'Hoy' ? styles.statusToday : styles.statusLater]}>
-                    <View style={[styles.statusDot, specialist.available === 'Hoy' ? styles.dotToday : styles.dotLater]} />
-                    <Text style={[styles.statusText, specialist.available === 'Hoy' ? styles.textToday : styles.textLater]}>
-                      {specialist.available === 'Hoy' ? 'Disponible hoy' : `Disp. ${specialist.available}`}
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.bookButton}
-                    activeOpacity={0.88}
-                    onPress={() => handleBooking(specialist.name)}
-                  >
-                    <Text style={styles.bookButtonText}>Reservar</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
             </View>
           ))
         ) : (
