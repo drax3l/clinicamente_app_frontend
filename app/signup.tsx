@@ -11,9 +11,13 @@ import {
   Platform,
   ActivityIndicator,
   Modal,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path, Circle } from 'react-native-svg';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../config/firebase';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -69,13 +73,37 @@ export default function SignupScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (validateForm()) {
       setLoading(true);
-      setTimeout(() => {
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const uid = userCredential.user.uid;
+
+        // Save profile details to Firestore in the 'users' collection
+        await setDoc(doc(db, 'users', uid), {
+          nombre,
+          email,
+          telefono,
+          role: 'patient',
+          createdAt: new Date().toISOString(),
+        });
+
         setLoading(false);
         setShowSuccessModal(true);
-      }, 1500);
+      } catch (error: any) {
+        console.error('Error during registration:', error);
+        let errorMessage = 'Ocurrió un error al registrar tu cuenta. Inténtalo de nuevo.';
+        if (error.code === 'auth/email-already-in-use') {
+          errorMessage = 'Este correo electrónico ya está registrado.';
+        } else if (error.code === 'auth/invalid-email') {
+          errorMessage = 'El correo electrónico no es válido.';
+        } else if (error.code === 'auth/weak-password') {
+          errorMessage = 'La contraseña es muy débil. Debe tener al menos 6 caracteres.';
+        }
+        Alert.alert('Error de Registro', errorMessage);
+        setLoading(false);
+      }
     }
   };
 

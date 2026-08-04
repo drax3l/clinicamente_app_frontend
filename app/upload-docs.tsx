@@ -11,9 +11,14 @@ import {
   Platform,
   ActivityIndicator,
   Modal,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
+import * as DocumentPicker from 'expo-document-picker';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { collection, addDoc } from 'firebase/firestore';
+import { storage, db } from '../config/firebase';
 
 type DocumentKey = 'cedula' | 'cv' | 'idDoc';
 
@@ -45,38 +50,89 @@ export default function UploadDocsScreen() {
     idDoc: { status: 'idle', progress: 0, fileName: '' },
   });
 
-  const startSimulatedUpload = (key: DocumentKey, defaultName: string) => {
-    // If already uploading, don't start again
+  const [docUrls, setDocUrls] = useState<{ [key in DocumentKey]: string }>({
+    cedula: '',
+    cv: '',
+    idDoc: '',
+  });
+
+  const pickAndUploadDocument = async (key: DocumentKey) => {
     if (uploads[key].status === 'uploading') return;
 
-    setUploads((prev) => ({
-      ...prev,
-      [key]: { status: 'uploading', progress: 0, fileName: defaultName },
-    }));
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/*'],
+        copyToCacheDirectory: true,
+      });
 
-    let currentProgress = 0;
-    const interval = setInterval(() => {
-      currentProgress += 10;
-      if (currentProgress >= 100) {
-        clearInterval(interval);
-        setUploads((prev) => ({
-          ...prev,
-          [key]: { status: 'success', progress: 100, fileName: defaultName },
-        }));
-      } else {
-        setUploads((prev) => ({
-          ...prev,
-          [key]: { ...prev[key], progress: currentProgress },
-        }));
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
       }
-    }, 120);
+
+      const asset = result.assets[0];
+      const fileName = asset.name;
+      const fileUri = asset.uri;
+
+      setUploads((prev) => ({
+        ...prev,
+        [key]: { status: 'uploading', progress: 0, fileName },
+      }));
+
+      const response = await fetch(fileUri);
+      const blob = await response.blob();
+
+      const fileExtension = fileName.split('.').pop() || 'pdf';
+      const uniqueFileName = `${Date.now()}_${key}.${fileExtension}`;
+      const storageRef = ref(storage, `psychologist_applications/${uniqueFileName}`);
+
+      const uploadTask = uploadBytesResumable(storageRef, blob);
+
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const progress = Math.round(
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+          );
+          setUploads((prev) => ({
+            ...prev,
+            [key]: { ...prev[key], progress },
+          }));
+        },
+        (error) => {
+          console.error('Upload error:', error);
+          setUploads((prev) => ({
+            ...prev,
+            [key]: { status: 'idle', progress: 0, fileName: '' },
+          }));
+          Alert.alert('Error', 'No se pudo subir el archivo. Inténtalo de nuevo.');
+        },
+        async () => {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          setUploads((prev) => ({
+            ...prev,
+            [key]: { status: 'success', progress: 100, fileName },
+          }));
+          setDocUrls((prev) => ({
+            ...prev,
+            [key]: downloadURL,
+          }));
+        }
+      );
+    } catch (err) {
+      console.error('Error selecting document:', err);
+      Alert.alert('Error', 'Ocurrió un error al seleccionar el documento.');
+      setUploads((prev) => ({
+        ...prev,
+        [key]: { status: 'idle', progress: 0, fileName: '' },
+      }));
+    }
   };
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
     if (!nombre.trim()) newErrors.nombre = 'El nombre completo es requerido';
-    
+
     if (!email.trim()) {
       newErrors.email = 'El correo electrónico es requerido';
     } else if (!/\S+@\S+\.\S+/.test(email)) {
@@ -104,13 +160,29 @@ export default function UploadDocsScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validateForm()) {
       setLoading(true);
-      setTimeout(() => {
+      try {
+        await addDoc(collection(db, 'psychologist_applications'), {
+          nombre,
+          email,
+          telefono,
+          numeroCedula,
+          documents: docUrls,
+          status: 'pending_review',
+          createdAt: new Date().toISOString(),
+        });
         setLoading(false);
         setShowSuccessModal(true);
-      }, 1500);
+      } catch (error) {
+        console.error('Error submitting application:', error);
+        Alert.alert(
+          'Error',
+          'Hubo un problema al enviar tu postulación. Por favor inténtalo de nuevo.'
+        );
+        setLoading(false);
+      }
     }
   };
 
@@ -246,7 +318,7 @@ export default function UploadDocsScreen() {
                   title="Cédula Profesional Escaneada"
                   description="Por ambas caras en un solo PDF"
                   state={uploads.cedula}
-                  onPress={() => startSimulatedUpload('cedula', 'cedula_profesional.pdf')}
+                  onPress={() => pickAndUploadDocument('cedula')}
                 />
 
                 {/* 2. Currículum Vitae */}
@@ -254,7 +326,7 @@ export default function UploadDocsScreen() {
                   title="Currículum Vitae (CV) Actualizado"
                   description="Historial laboral y académico completo"
                   state={uploads.cv}
-                  onPress={() => startSimulatedUpload('cv', 'cv_carlos_mendoza.pdf')}
+                  onPress={() => pickAndUploadDocument('cv')}
                 />
 
                 {/* 3. Identificación Oficial */}
@@ -262,7 +334,7 @@ export default function UploadDocsScreen() {
                   title="Identificación Oficial (INE / Pasaporte)"
                   description="Frente y vuelta legibles"
                   state={uploads.idDoc}
-                  onPress={() => startSimulatedUpload('idDoc', 'identificacion_oficial.pdf')}
+                  onPress={() => pickAndUploadDocument('idDoc')}
                 />
               </View>
             </View>

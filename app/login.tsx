@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../config/firebase';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -38,14 +40,31 @@ export default function LoginScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (validateForm()) {
       setLoading(true);
-      setTimeout(() => {
-        setLoading(false);
-        Alert.alert('Éxito', 'Inicio de sesión simulado correctamente.');
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        Alert.alert('Éxito', 'Inicio de sesión correcto.');
         router.replace('/(tabs)' as any);
-      }, 1200);
+      } catch (error: any) {
+        console.error('Error signing in:', error);
+        let errorMessage = 'Ocurrió un error al iniciar sesión. Inténtalo de nuevo.';
+        if (
+          error.code === 'auth/user-not-found' ||
+          error.code === 'auth/wrong-password' ||
+          error.code === 'auth/invalid-credential'
+        ) {
+          errorMessage = 'Correo o contraseña incorrectos.';
+        } else if (error.code === 'auth/invalid-email') {
+          errorMessage = 'El correo electrónico no es válido.';
+        } else if (error.code === 'auth/too-many-requests') {
+          errorMessage = 'Demasiados intentos fallidos. Inténtalo más tarde.';
+        }
+        Alert.alert('Error de Inicio de Sesión', errorMessage);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -10,10 +10,14 @@ import {
   Platform,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
+import { collection, getDocs, doc, setDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
+import { useAuth } from '../../context/auth-context';
 
 const CATEGORIES = ['Todos', 'Ansiedad', 'Depresión', 'Pareja', 'Autoestima', 'Infantil'];
 
@@ -85,13 +89,73 @@ const SPECIALISTS = [
   },
 ];
 
+interface Specialist {
+  id: string;
+  name: string;
+  specialty: string;
+  rating: string;
+  reviews: string;
+  image: string;
+  available: string;
+  experience: string;
+  price: string;
+  bio: string;
+  categories: string[];
+}
+
 export default function ExploreScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
+  const [specialists, setSpecialists] = useState<Specialist[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSpecialists = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'specialists'));
+        const list: Specialist[] = [];
+        querySnapshot.forEach((doc) => {
+          list.push({ id: doc.id, ...doc.data() } as Specialist);
+        });
+
+        if (list.length === 0) {
+          // Auto-seed Firestore if empty
+          console.log('Seeding specialists in Firestore...');
+          for (const spec of SPECIALISTS) {
+            await setDoc(doc(db, 'specialists', spec.id), {
+              name: spec.name,
+              specialty: spec.specialty,
+              rating: spec.rating,
+              reviews: spec.reviews,
+              image: spec.image,
+              available: spec.available,
+              experience: spec.experience,
+              price: spec.price,
+              bio: spec.bio,
+              categories: spec.categories,
+            });
+          }
+          setSpecialists(SPECIALISTS);
+        } else {
+          setSpecialists(list);
+        }
+      } catch (error) {
+        console.error('Error fetching specialists:', error);
+        // Fallback to local hardcoded data
+        setSpecialists(SPECIALISTS);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSpecialists();
+  }, []);
 
   // Filter logic
-  const filteredSpecialists = SPECIALISTS.filter((spec) => {
+  const filteredSpecialists = specialists.filter((spec) => {
     const matchesSearch =
       spec.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       spec.specialty.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -103,12 +167,24 @@ export default function ExploreScreen() {
     return matchesSearch && matchesCategory;
   });
 
-  const handleBooking = (name: string) => {
-    Alert.alert(
-      'Reservar Cita',
-      `¿Deseas agendar una sesión con ${name}? Esta función estará disponible en la próxima actualización.`,
-      [{ text: 'Entendido', style: 'cancel' }]
-    );
+  const handleBooking = (specialistId: string, specialistName: string) => {
+    if (!user) {
+      Alert.alert(
+        'Inicia Sesión',
+        'Necesitas iniciar sesión para agendar una cita con un terapeuta.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Iniciar Sesión', onPress: () => router.push('/login' as any) },
+        ]
+      );
+      return;
+    }
+
+    // Redirect to real booking screen
+    router.push({
+      pathname: '/book-appointment',
+      params: { specialistId, specialistName },
+    } as any);
   };
 
   return (
@@ -204,54 +280,108 @@ export default function ExploreScreen() {
       </View>
 
       {/* Main List */}
-      <ScrollView
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {filteredSpecialists.length > 0 ? (
-          filteredSpecialists.map((specialist) => (
-            <View key={specialist.id} style={styles.card}>
-              {/* Doctor Info Row */}
-              <View style={styles.cardHeader}>
-                <Image
-                  source={{ uri: specialist.image }}
-                  style={styles.avatar}
-                  contentFit="cover"
-                  transition={200}
-                />
-                <View style={styles.doctorDetails}>
-                  <View style={styles.ratingRow}>
-                    <Text style={styles.starIcon}>★</Text>
-                    <Text style={styles.ratingText}>{specialist.rating}</Text>
-                    <Text style={styles.reviewsText}>({specialist.reviews} opiniones)</Text>
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#4E6E6B" />
+          <Text style={{ marginTop: 12, color: '#657B76', fontSize: 14 }}>Cargando especialistas...</Text>
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {filteredSpecialists.length > 0 ? (
+            filteredSpecialists.map((specialist) => (
+              <View key={specialist.id} style={styles.card}>
+                {/* Doctor Info Row */}
+                <View style={styles.cardHeader}>
+                  <Image
+                    source={{ uri: specialist.image }}
+                    style={styles.avatar}
+                    contentFit="cover"
+                    transition={200}
+                  />
+                  <View style={styles.doctorDetails}>
+                    <View style={styles.ratingRow}>
+                      <Text style={styles.starIcon}>★</Text>
+                      <Text style={styles.ratingText}>{specialist.rating}</Text>
+                      <Text style={styles.reviewsText}>({specialist.reviews} opiniones)</Text>
+                    </View>
+                    <Text style={styles.doctorName}>{specialist.name}</Text>
+                    <Text style={styles.doctorSpecialty}>{specialist.specialty}</Text>
+                    <Text style={styles.doctorExp}>{specialist.experience}</Text>
                   </View>
-                  <Text style={styles.doctorName}>{specialist.name}</Text>
-                  <Text style={styles.doctorSpecialty}>{specialist.specialty}</Text>
-                  <Text style={styles.doctorExp}>{specialist.experience}</Text>
+                </View>
+
+                {/* Bio Description */}
+                <Text style={styles.bioText} numberOfLines={2}>
+                  {specialist.bio}
+                </Text>
+
+                {/* Tag Badges */}
+                <View style={styles.tagsContainer}>
+                  {specialist.categories.map((cat) => (
+                    <View key={cat} style={styles.tagBadge}>
+                      <Text style={styles.tagText}>{cat}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Divider Line */}
+                <View style={styles.divider} />
+
+                {/* Card Footer with Price, Status & Booking Button */}
+                <View style={styles.footerRow}>
+                  <View style={styles.priceContainer}>
+                    <Text style={styles.priceLabel}>Sesión de 50 min</Text>
+                    <Text style={styles.priceValue}>
+                      {specialist.price} <Text style={styles.pricePeriod}>/sesión</Text>
+                    </Text>
+                  </View>
+
+                  <View style={styles.actionButtons}>
+                    {/* Status badge */}
+                    <View
+                      style={[
+                        styles.statusIndicator,
+                        specialist.available === 'Hoy' ? styles.statusToday : styles.statusLater,
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.statusDot,
+                          specialist.available === 'Hoy' ? styles.dotToday : styles.dotLater,
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.statusText,
+                          specialist.available === 'Hoy' ? styles.textToday : styles.textLater,
+                        ]}
+                      >
+                        {specialist.available === 'Hoy' ? 'Disponible hoy' : `Disponible ${specialist.available}`}
+                      </Text>
+                    </View>
+
+                    {/* Booking button */}
+                    <TouchableOpacity
+                      style={styles.bookButton}
+                      activeOpacity={0.8}
+                      onPress={() => handleBooking(specialist.id, specialist.name)}
+                    >
+                      <Text style={styles.bookButtonText}>Reservar</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-
-              {/* Bio Description */}
-              <Text style={styles.bioText} numberOfLines={2}>
-                {specialist.bio}
-              </Text>
-
-              {/* Tag Badges */}
-              <View style={styles.tagsContainer}>
-                {specialist.categories.map((cat) => (
-                  <View key={cat} style={styles.tagBadge}>
-                    <Text style={styles.tagText}>{cat}</Text>
-                  </View>
-                ))}
-              </View>
+            ))
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No encontramos especialistas en esta categoría o búsqueda.</Text>
             </View>
-          ))
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No encontramos especialistas en esta categoría o búsqueda.</Text>
-          </View>
-        )}
-      </ScrollView>
+          )}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
