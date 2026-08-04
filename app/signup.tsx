@@ -11,22 +11,25 @@ import {
   Platform,
   ActivityIndicator,
   Modal,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path, Circle } from 'react-native-svg';
+import { register } from '../api/authService';
 
 export default function SignupScreen() {
   const router = useRouter();
 
-  // Form states
+  // Estados independientes para cada campo exigido por RegisterRequest en el backend
   const [nombre, setNombre] = useState('');
-  const [email, setEmail] = useState('');
-  const [telefono, setTelefono] = useState('');
-  const [password, setPassword] = useState('');
+  const [apePaterno, setApePaterno] = useState('');
+  const [apeMaterno, setApeMaterno] = useState('');
+  const [correo, setCorreo] = useState('');
+  const [contrasena, setContrasena] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
 
-  // Styling & interactions
+  // Interacciones visuales y UX
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -37,27 +40,27 @@ export default function SignupScreen() {
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
-    if (!nombre.trim()) newErrors.nombre = 'El nombre completo es requerido';
+    if (!nombre.trim()) {
+      newErrors.nombre = 'El nombre es requerido';
+    }
+
+    if (!apePaterno.trim()) {
+      newErrors.apePaterno = 'El apellido paterno es requerido';
+    }
     
-    if (!email.trim()) {
-      newErrors.email = 'El correo electrónico es requerido';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Ingresa un correo electrónico válido';
+    if (!correo.trim()) {
+      newErrors.correo = 'El correo electrónico es requerido';
+    } else if (!/\S+@\S+\.\S+/.test(correo.trim())) {
+      newErrors.correo = 'Ingresa un correo electrónico válido';
     }
 
-    if (!telefono.trim()) {
-      newErrors.telefono = 'El teléfono es requerido';
-    } else if (telefono.trim().length < 8) {
-      newErrors.telefono = 'Ingresa un teléfono válido';
+    if (!contrasena) {
+      newErrors.contrasena = 'La contraseña es requerida';
+    } else if (contrasena.length < 6) {
+      newErrors.contrasena = 'La contraseña debe tener al menos 6 caracteres';
     }
 
-    if (!password) {
-      newErrors.password = 'La contraseña es requerida';
-    } else if (password.length < 6) {
-      newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
-    }
-
-    if (password !== confirmPassword) {
+    if (contrasena !== confirmPassword) {
       newErrors.confirmPassword = 'Las contraseñas no coinciden';
     }
 
@@ -69,13 +72,65 @@ export default function SignupScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleRegister = () => {
-    if (validateForm()) {
-      setLoading(true);
-      setTimeout(() => {
-        setLoading(false);
-        setShowSuccessModal(true);
-      }, 1500);
+  const handleRegister = async () => {
+    if (!validateForm()) return;
+
+    // Construcción del objeto JSON exacto esperado por el backend Spring Boot (RegisterRequest.java)
+    const userData: {
+      nombre: string;
+      apePaterno: string;
+      apeMaterno?: string;
+      correo: string;
+      contrasena: string;
+    } = {
+      nombre: nombre.trim(),
+      apePaterno: apePaterno.trim(),
+      correo: correo.trim().toLowerCase(),
+      contrasena: contrasena,
+    };
+
+    if (apeMaterno.trim()) {
+      userData.apeMaterno = apeMaterno.trim();
+    }
+
+    // Log de depuración en consola antes de enviar la petición
+    console.log("Payload a enviar:", userData);
+
+    setLoading(true);
+    try {
+      // Petición POST a /auth/register
+      await register(userData);
+
+      setLoading(false);
+      setShowSuccessModal(true);
+    } catch (error: any) {
+      setLoading(false);
+      
+      // Captura y extracción detallada de los errores del backend (error.response?.data)
+      let mensajeError = 'No se pudo completar el registro. Verifica los datos o tu conexión.';
+
+      if (error.response?.data) {
+        const backendData = error.response.data;
+        if (backendData.message) {
+          mensajeError = backendData.message;
+        } else if (backendData.errors) {
+          if (Array.isArray(backendData.errors)) {
+            mensajeError = backendData.errors.join('\n');
+          } else if (typeof backendData.errors === 'object') {
+            mensajeError = Object.entries(backendData.errors)
+              .map(([campo, razon]) => `• ${campo}: ${razon}`)
+              .join('\n');
+          }
+        } else if (typeof backendData === 'string') {
+          mensajeError = backendData;
+        } else if (typeof backendData === 'object') {
+          mensajeError = Object.entries(backendData)
+            .map(([campo, razon]) => `• ${campo}: ${razon}`)
+            .join('\n');
+        }
+      }
+
+      Alert.alert('Error al Registrar (400 Bad Request)', mensajeError);
     }
   };
 
@@ -88,6 +143,7 @@ export default function SignupScreen() {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           {/* Header */}
           <View style={styles.header}>
@@ -99,16 +155,16 @@ export default function SignupScreen() {
 
           {/* Form */}
           <View style={styles.form}>
-            {/* Nombre Completo */}
+            {/* Nombre */}
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Nombre Completo *</Text>
+              <Text style={styles.label}>Nombre *</Text>
               <TextInput
                 style={[
                   styles.input,
                   focusedField === 'nombre' && styles.inputFocused,
-                  errors.nombre && styles.inputError,
+                  errors.nombre ? styles.inputError : null,
                 ]}
-                placeholder="Ej. Sofía Martínez"
+                placeholder="Ej. Sofía"
                 placeholderTextColor="#A3B8B4"
                 value={nombre}
                 onChangeText={(text) => {
@@ -117,8 +173,50 @@ export default function SignupScreen() {
                 }}
                 onFocus={() => setFocusedField('nombre')}
                 onBlur={() => setFocusedField(null)}
+                editable={!loading}
               />
               {errors.nombre && <Text style={styles.errorText}>{errors.nombre}</Text>}
+            </View>
+
+            {/* Apellido Paterno */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Apellido Paterno *</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  focusedField === 'apePaterno' && styles.inputFocused,
+                  errors.apePaterno ? styles.inputError : null,
+                ]}
+                placeholder="Ej. Martínez"
+                placeholderTextColor="#A3B8B4"
+                value={apePaterno}
+                onChangeText={(text) => {
+                  setApePaterno(text);
+                  if (errors.apePaterno) setErrors({ ...errors, apePaterno: '' });
+                }}
+                onFocus={() => setFocusedField('apePaterno')}
+                onBlur={() => setFocusedField(null)}
+                editable={!loading}
+              />
+              {errors.apePaterno && <Text style={styles.errorText}>{errors.apePaterno}</Text>}
+            </View>
+
+            {/* Apellido Materno (Opcional) */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Apellido Materno (Opcional)</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  focusedField === 'apeMaterno' && styles.inputFocused,
+                ]}
+                placeholder="Ej. Ramos"
+                placeholderTextColor="#A3B8B4"
+                value={apeMaterno}
+                onChangeText={(text) => setApeMaterno(text)}
+                onFocus={() => setFocusedField('apeMaterno')}
+                onBlur={() => setFocusedField(null)}
+                editable={!loading}
+              />
             </View>
 
             {/* Correo Electrónico */}
@@ -127,45 +225,23 @@ export default function SignupScreen() {
               <TextInput
                 style={[
                   styles.input,
-                  focusedField === 'email' && styles.inputFocused,
-                  errors.email && styles.inputError,
+                  focusedField === 'correo' && styles.inputFocused,
+                  errors.correo ? styles.inputError : null,
                 ]}
                 placeholder="correo@ejemplo.com"
                 placeholderTextColor="#A3B8B4"
                 keyboardType="email-address"
                 autoCapitalize="none"
-                value={email}
+                value={correo}
                 onChangeText={(text) => {
-                  setEmail(text);
-                  if (errors.email) setErrors({ ...errors, email: '' });
+                  setCorreo(text);
+                  if (errors.correo) setErrors({ ...errors, correo: '' });
                 }}
-                onFocus={() => setFocusedField('email')}
+                onFocus={() => setFocusedField('correo')}
                 onBlur={() => setFocusedField(null)}
+                editable={!loading}
               />
-              {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
-            </View>
-
-            {/* Teléfono */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Teléfono de Contacto *</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  focusedField === 'telefono' && styles.inputFocused,
-                  errors.telefono && styles.inputError,
-                ]}
-                placeholder="Ej. +52 55 1234 5678"
-                placeholderTextColor="#A3B8B4"
-                keyboardType="phone-pad"
-                value={telefono}
-                onChangeText={(text) => {
-                  setTelefono(text);
-                  if (errors.telefono) setErrors({ ...errors, telefono: '' });
-                }}
-                onFocus={() => setFocusedField('telefono')}
-                onBlur={() => setFocusedField(null)}
-              />
-              {errors.telefono && <Text style={styles.errorText}>{errors.telefono}</Text>}
+              {errors.correo && <Text style={styles.errorText}>{errors.correo}</Text>}
             </View>
 
             {/* Contraseña */}
@@ -176,29 +252,33 @@ export default function SignupScreen() {
                   style={[
                     styles.input,
                     styles.passwordInput,
-                    focusedField === 'password' && styles.inputFocused,
-                    errors.password && styles.inputError,
+                    focusedField === 'contrasena' && styles.inputFocused,
+                    errors.contrasena ? styles.inputError : null,
                   ]}
                   placeholder="Mínimo 6 caracteres"
                   placeholderTextColor="#A3B8B4"
                   secureTextEntry={!showPassword}
-                  value={password}
+                  value={contrasena}
                   onChangeText={(text) => {
-                    setPassword(text);
-                    if (errors.password) setErrors({ ...errors, password: '' });
+                    setContrasena(text);
+                    if (errors.contrasena) setErrors({ ...errors, contrasena: '' });
                   }}
-                  onFocus={() => setFocusedField('password')}
+                  onFocus={() => setFocusedField('contrasena')}
                   onBlur={() => setFocusedField(null)}
+                  editable={!loading}
                 />
                 <TouchableOpacity
                   style={styles.eyeButton}
                   onPress={() => setShowPassword(!showPassword)}
+                  disabled={loading}
                 >
                   <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                     <Path
-                      d={showPassword 
-                        ? "M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" 
-                        : "M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61M2 2l20 20"}
+                      d={
+                        showPassword 
+                          ? "M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" 
+                          : "M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61M2 2l20 20"
+                      }
                       stroke="#657B76"
                       strokeWidth="2"
                       strokeLinecap="round"
@@ -207,7 +287,7 @@ export default function SignupScreen() {
                   </Svg>
                 </TouchableOpacity>
               </View>
-              {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+              {errors.contrasena && <Text style={styles.errorText}>{errors.contrasena}</Text>}
             </View>
 
             {/* Confirmar Contraseña */}
@@ -219,7 +299,7 @@ export default function SignupScreen() {
                     styles.input,
                     styles.passwordInput,
                     focusedField === 'confirmPassword' && styles.inputFocused,
-                    errors.confirmPassword && styles.inputError,
+                    errors.confirmPassword ? styles.inputError : null,
                   ]}
                   placeholder="Confirma tu contraseña"
                   placeholderTextColor="#A3B8B4"
@@ -231,16 +311,20 @@ export default function SignupScreen() {
                   }}
                   onFocus={() => setFocusedField('confirmPassword')}
                   onBlur={() => setFocusedField(null)}
+                  editable={!loading}
                 />
                 <TouchableOpacity
                   style={styles.eyeButton}
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  disabled={loading}
                 >
                   <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                     <Path
-                      d={showConfirmPassword 
-                        ? "M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" 
-                        : "M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61M2 2l20 20"}
+                      d={
+                        showConfirmPassword 
+                          ? "M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" 
+                          : "M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61M2 2l20 20"
+                      }
                       stroke="#657B76"
                       strokeWidth="2"
                       strokeLinecap="round"
@@ -262,6 +346,7 @@ export default function SignupScreen() {
                 setAcceptTerms(!acceptTerms);
                 if (errors.terms) setErrors({ ...errors, terms: '' });
               }}
+              disabled={loading}
             >
               <View style={[styles.checkbox, acceptTerms && styles.checkboxChecked]}>
                 {acceptTerms && (
@@ -291,7 +376,7 @@ export default function SignupScreen() {
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
                 <Text style={styles.submitButtonText}>Crear Cuenta</Text>
               )}
@@ -303,7 +388,8 @@ export default function SignupScreen() {
             <Text style={styles.footerText}>¿Ya tienes cuenta? </Text>
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => router.push('/login' as any)}
+              onPress={() => router.push('/login')}
+              disabled={loading}
             >
               <Text style={styles.footerLinkText}>Inicia sesión</Text>
             </TouchableOpacity>
@@ -344,7 +430,7 @@ export default function SignupScreen() {
               activeOpacity={0.8}
               onPress={() => {
                 setShowSuccessModal(false);
-                router.replace('/(tabs)' as any);
+                router.replace('/(tabs)');
               }}
             >
               <Text style={styles.modalButtonText}>Comenzar</Text>

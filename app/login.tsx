@@ -14,38 +14,79 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
+import { login } from '../api/authService';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [focusedField, setFocusedField] = useState<string | null>(null);
+  
+  // Estado para capturar los inputs del formulario
+  const [correo, setCorreo] = useState('');
+  const [contrasena, setContrasena] = useState('');
+  
+  // Estados para UI y UX
+  const [focusedField, setFocusedField] = useState<'correo' | 'contrasena' | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [errors, setErrors] = useState<{ correo?: string; contrasena?: string }>({});
 
+  // Validación de campos antes de la petición
   const validateForm = () => {
-    const newErrors: { [key: string]: string } = {};
-    if (!email.trim()) {
-      newErrors.email = 'El correo electrónico es requerido';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Ingresa un correo electrónico válido';
+    const newErrors: { correo?: string; contrasena?: string } = {};
+    
+    if (!correo.trim()) {
+      newErrors.correo = 'El correo electrónico es requerido';
+    } else if (!/\S+@\S+\.\S+/.test(correo.trim())) {
+      newErrors.correo = 'Ingresa un correo electrónico válido';
     }
-    if (!password) {
-      newErrors.password = 'La contraseña es requerida';
+
+    if (!contrasena) {
+      newErrors.contrasena = 'La contraseña es requerida';
     }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleLogin = () => {
-    if (validateForm()) {
-      setLoading(true);
-      setTimeout(() => {
-        setLoading(false);
-        Alert.alert('Éxito', 'Inicio de sesión simulado correctamente.');
-        router.replace('/(tabs)' as any);
-      }, 1200);
+  // Manejador del inicio de sesión
+  const handleLogin = async () => {
+    if (!validateForm()) return;
+
+    setLoading(true);
+    try {
+      // Llamada al servicio de autenticación
+      await login(correo.trim(), contrasena);
+
+      Alert.alert('¡Bienvenido!', 'Sesión iniciada correctamente.', [
+        {
+          text: 'Continuar',
+          onPress: () => router.replace('/(tabs)'),
+        },
+      ]);
+    } catch (error: any) {
+      let mensajeError = 'No se pudo iniciar sesión. Verifica tus credenciales o tu conexión a internet.';
+      
+      if (error.response?.data) {
+        const data = error.response.data;
+        if (data.message) {
+          mensajeError = data.message;
+        } else if (data.errors) {
+          if (Array.isArray(data.errors)) {
+            mensajeError = data.errors.join('\n');
+          } else if (typeof data.errors === 'object') {
+            mensajeError = Object.entries(data.errors)
+              .map(([campo, desc]) => `• ${campo}: ${desc}`)
+              .join('\n');
+          }
+        } else if (typeof data === 'string') {
+          mensajeError = data;
+        }
+      } else if (error.response?.status === 401 || error.response?.status === 403) {
+        mensajeError = 'Correo electrónico o contraseña incorrectos.';
+      }
+
+      Alert.alert('Error de Autenticación', mensajeError);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -58,8 +99,9 @@ export default function LoginScreen() {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* Top visual graphic / icon */}
+          {/* Cabecera / Logo */}
           <View style={styles.header}>
             <View style={styles.logoIcon}>
               <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">
@@ -74,41 +116,42 @@ export default function LoginScreen() {
             </View>
             <Text style={styles.title}>¡Hola de nuevo!</Text>
             <Text style={styles.subtitle}>
-              Ingresa tus datos para continuar cuidando tu salud mental.
+              Ingresa tus credenciales para continuar en ClinicaMente.
             </Text>
           </View>
 
-          {/* Form */}
+          {/* Formulario */}
           <View style={styles.form}>
-            {/* Email */}
+            {/* Campo: Correo Electrónico */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Correo Electrónico</Text>
               <TextInput
                 style={[
                   styles.input,
-                  focusedField === 'email' && styles.inputFocused,
-                  errors.email && styles.inputError,
+                  focusedField === 'correo' && styles.inputFocused,
+                  errors.correo ? styles.inputError : null,
                 ]}
                 placeholder="correo@ejemplo.com"
                 placeholderTextColor="#A3B8B4"
                 keyboardType="email-address"
                 autoCapitalize="none"
-                value={email}
+                value={correo}
                 onChangeText={(text) => {
-                  setEmail(text);
-                  if (errors.email) setErrors({ ...errors, email: '' });
+                  setCorreo(text);
+                  if (errors.correo) setErrors({ ...errors, correo: undefined });
                 }}
-                onFocus={() => setFocusedField('email')}
+                onFocus={() => setFocusedField('correo')}
                 onBlur={() => setFocusedField(null)}
+                editable={!loading}
               />
-              {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+              {errors.correo && <Text style={styles.errorText}>{errors.correo}</Text>}
             </View>
 
-            {/* Password */}
+            {/* Campo: Contraseña */}
             <View style={styles.inputContainer}>
               <View style={styles.labelRow}>
                 <Text style={styles.label}>Contraseña</Text>
-                <TouchableOpacity activeOpacity={0.6}>
+                <TouchableOpacity activeOpacity={0.6} disabled={loading}>
                   <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
                 </TouchableOpacity>
               </View>
@@ -117,29 +160,33 @@ export default function LoginScreen() {
                   style={[
                     styles.input,
                     styles.passwordInput,
-                    focusedField === 'password' && styles.inputFocused,
-                    errors.password && styles.inputError,
+                    focusedField === 'contrasena' && styles.inputFocused,
+                    errors.contrasena ? styles.inputError : null,
                   ]}
                   placeholder="Tu contraseña"
                   placeholderTextColor="#A3B8B4"
                   secureTextEntry={!showPassword}
-                  value={password}
+                  value={contrasena}
                   onChangeText={(text) => {
-                    setPassword(text);
-                    if (errors.password) setErrors({ ...errors, password: '' });
+                    setContrasena(text);
+                    if (errors.contrasena) setErrors({ ...errors, contrasena: undefined });
                   }}
-                  onFocus={() => setFocusedField('password')}
+                  onFocus={() => setFocusedField('contrasena')}
                   onBlur={() => setFocusedField(null)}
+                  editable={!loading}
                 />
                 <TouchableOpacity
                   style={styles.eyeButton}
                   onPress={() => setShowPassword(!showPassword)}
+                  disabled={loading}
                 >
                   <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                     <Path
-                      d={showPassword
-                        ? "M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"
-                        : "M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61M2 2l20 20"}
+                      d={
+                        showPassword
+                          ? 'M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z'
+                          : 'M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61M2 2l20 20'
+                      }
                       stroke="#657B76"
                       strokeWidth="2"
                       strokeLinecap="round"
@@ -148,10 +195,10 @@ export default function LoginScreen() {
                   </Svg>
                 </TouchableOpacity>
               </View>
-              {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+              {errors.contrasena && <Text style={styles.errorText}>{errors.contrasena}</Text>}
             </View>
 
-            {/* Iniciar Sesión Button */}
+            {/* Botón Iniciar Sesión */}
             <TouchableOpacity
               style={[styles.submitButton, loading && styles.submitButtonDisabled]}
               activeOpacity={0.85}
@@ -159,19 +206,20 @@ export default function LoginScreen() {
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
                 <Text style={styles.submitButtonText}>Iniciar Sesión</Text>
               )}
             </TouchableOpacity>
           </View>
 
-          {/* Footer Navigation */}
+          {/* Enlace a Registro */}
           <View style={styles.footerRow}>
             <Text style={styles.footerText}>¿No tienes cuenta? </Text>
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => router.push('/signup' as any)}
+              onPress={() => router.push('/signup')}
+              disabled={loading}
             >
               <Text style={styles.footerLinkText}>Regístrate aquí</Text>
             </TouchableOpacity>
