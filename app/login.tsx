@@ -213,15 +213,35 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Enlace a Registro */}
-          <View style={styles.footerRow}>
-            <Text style={styles.footerText}>¿No tienes cuenta? </Text>
+          {/* ─── Footer de Registro ─── */}
+          <View style={styles.footerContainer}>
+            {/* Link 1: Registro como Paciente */}
+            <View style={styles.footerRow}>
+              <Text style={styles.footerText}>¿No tienes cuenta? </Text>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => router.push('/signup')}
+                disabled={loading}
+              >
+                <Text style={styles.footerLinkText}>Regístrate como Paciente</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Divisor visual */}
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>o</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* Link 2: Registro como Psicólogo */}
             <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => router.push('/signup')}
+              style={styles.psicologoButton}
+              activeOpacity={0.8}
+              onPress={() => router.push('/signup-psicologo')}
               disabled={loading}
             >
-              <Text style={styles.footerLinkText}>Regístrate aquí</Text>
+              <Text style={styles.psicologoButtonText}>¿Eres especialista? Únete como Psicólogo</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -356,11 +376,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+  footerContainer: {
+    marginTop: 28,
+    gap: 16,
+  },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 32,
   },
   footerText: {
     fontSize: 14,
@@ -371,5 +394,34 @@ const styles = StyleSheet.create({
     color: '#3B5B57',
     fontWeight: '700',
     textDecorationLine: 'underline',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#D8E8E3',
+  },
+  dividerText: {
+    fontSize: 13,
+    color: '#A3B8B4',
+    fontWeight: '500',
+  },
+  psicologoButton: {
+    borderWidth: 1.5,
+    borderColor: '#4E6E6B',
+    borderRadius: 14,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  psicologoButtonText: {
+    fontSize: 14,
+    color: '#4E6E6B',
+    fontWeight: '700',
   },
 });

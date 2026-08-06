@@ -1,52 +1,32 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
-
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <>
       <Stack>
+        {/* ─── Flujo de Autenticación ─── */}
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="signup" options={{ headerShown: false }} />
+        <Stack.Screen name="signup-psicologo" options={{ headerShown: false }} />
+
+        {/* ─── Zona Autenticada (Tabs) ─── */}
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+
+        {/* ─── Sub-pantallas del Perfil ─── */}
+        <Stack.Screen name="profile/editar" options={{ headerShown: false }} />
+        <Stack.Screen name="profile/citas" options={{ headerShown: false }} />
+
+        {/* ─── Flujo de Reservas ─── */}
+        <Stack.Screen name="reservar/[id]" options={{ headerShown: false }} />
+
+        {/* ─── Otras Pantallas ─── */}
         <Stack.Screen name="search" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="login"
-          options={{
-            title: 'Iniciar Sesión',
-            headerTintColor: '#4E6E6B',
-            headerStyle: { backgroundColor: '#EFF5F3' },
-            headerShadowVisible: false,
-          }}
-        />
-        <Stack.Screen
-          name="signup"
-          options={{
-            title: 'Crear Cuenta',
-            headerTintColor: '#4E6E6B',
-            headerStyle: { backgroundColor: '#EFF5F3' },
-            headerShadowVisible: false,
-          }}
-        />
-        <Stack.Screen
-          name="upload-docs"
-          options={{
-            title: 'Subir Documentación',
-            headerTintColor: '#4E6E6B',
-            headerStyle: { backgroundColor: '#EFF5F3' },
-            headerShadowVisible: false,
-          }}
-        />
+        <Stack.Screen name="upload-docs" options={{ headerShown: false }} />
+        <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
-    </ThemeProvider>
+    </>
   );
 }
