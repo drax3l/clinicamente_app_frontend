@@ -17,16 +17,35 @@ export const setStoredToken = async (token) => {
   }
 };
 
+export const setStoredRole = async (role) => {
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('user_role', role);
+    }
+  } else {
+    await SecureStore.setItemAsync('user_role', role);
+  }
+};
+
+export const getStoredRole = async () => {
+  if (Platform.OS === 'web') {
+    return typeof window !== 'undefined' ? localStorage.getItem('user_role') : null;
+  }
+  return await SecureStore.getItemAsync('user_role');
+};
+
 /**
- * Elimina el token de sesión según la plataforma.
+ * Elimina el token y rol de sesión según la plataforma.
  */
 export const removeStoredToken = async () => {
   if (Platform.OS === 'web') {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('jwt_token');
+      localStorage.removeItem('user_role');
     }
   } else {
     await SecureStore.deleteItemAsync('jwt_token');
+    await SecureStore.deleteItemAsync('user_role');
   }
 };
 

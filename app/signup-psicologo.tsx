@@ -107,12 +107,12 @@ export default function SignupPsicologoScreen() {
       await register(userData);
 
       Alert.alert(
-        '¡Solicitud enviada!',
-        'Tu cuenta como especialista ha sido creada. Nuestro equipo validará tu colegiatura y te notificará por correo cuando esté activa.',
+        '¡Registro Exitoso!',
+        'Tu cuenta como especialista ha sido creada correctamente. Bienvenido a tu panel de inicio.',
         [
           {
-            text: 'Ir al Login',
-            onPress: () => router.replace('/login'),
+            text: 'Ir a Inicio de Psicólogo',
+            onPress: () => router.replace('/(tabs-psicologo)' as any),
           },
         ]
       );

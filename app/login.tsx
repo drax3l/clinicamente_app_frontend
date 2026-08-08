@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
-import { login } from '../api/authService';
+import { login, setStoredRole } from '../api/authService';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -22,6 +22,7 @@ export default function LoginScreen() {
   // Estado para capturar los inputs del formulario
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
+  const [userType, setUserType] = useState<'PACIENTE' | 'PSICOLOGO'>('PACIENTE');
   
   // Estados para UI y UX
   const [focusedField, setFocusedField] = useState<'correo' | 'contrasena' | null>(null);
@@ -54,12 +55,30 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       // Llamada al servicio de autenticación
-      await login(correo.trim(), contrasena);
+      const response: any = await login(correo.trim(), contrasena);
+
+      const isPsicologo =
+        userType === 'PSICOLOGO' ||
+        response?.role === 'ROLE_PSICOLOGO' ||
+        response?.rol === 'PSICOLOGO' ||
+        correo.toLowerCase().includes('psicologo');
+
+      if (isPsicologo) {
+        await setStoredRole('ROLE_PSICOLOGO');
+      } else {
+        await setStoredRole('ROLE_PACIENTE');
+      }
 
       Alert.alert('¡Bienvenido!', 'Sesión iniciada correctamente.', [
         {
           text: 'Continuar',
-          onPress: () => router.replace('/(tabs)'),
+          onPress: () => {
+            if (isPsicologo) {
+              router.replace('/(tabs-psicologo)' as any);
+            } else {
+              router.replace('/(tabs)' as any);
+            }
+          },
         },
       ]);
     } catch (error: any) {
@@ -118,6 +137,28 @@ export default function LoginScreen() {
             <Text style={styles.subtitle}>
               Ingresa tus credenciales para continuar en ClinicaMente.
             </Text>
+
+            {/* Selector de Tipo de Usuario */}
+            <View style={styles.roleToggleContainer}>
+              <TouchableOpacity
+                style={[styles.roleToggleButton, userType === 'PACIENTE' && styles.roleToggleButtonActive]}
+                onPress={() => setUserType('PACIENTE')}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.roleToggleText, userType === 'PACIENTE' && styles.roleToggleTextActive]}>
+                  Paciente
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.roleToggleButton, userType === 'PSICOLOGO' && styles.roleToggleButtonActive]}
+                onPress={() => setUserType('PSICOLOGO')}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.roleToggleText, userType === 'PSICOLOGO' && styles.roleToggleTextActive]}>
+                  Psicólogo
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Formulario */}
@@ -422,6 +463,32 @@ const styles = StyleSheet.create({
   psicologoButtonText: {
     fontSize: 14,
     color: '#4E6E6B',
+    fontWeight: '700',
+  },
+  roleToggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#E2ECE8',
+    borderRadius: 14,
+    padding: 4,
+    marginTop: 18,
+    width: '100%',
+  },
+  roleToggleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 11,
+  },
+  roleToggleButtonActive: {
+    backgroundColor: '#4E6E6B',
+  },
+  roleToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#657B76',
+  },
+  roleToggleTextActive: {
+    color: '#FFFFFF',
     fontWeight: '700',
   },
 });

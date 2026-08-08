@@ -13,6 +13,7 @@ export default function RootLayout() {
 
         {/* ─── Zona Autenticada (Tabs) ─── */}
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs-psicologo)" options={{ headerShown: false }} />
 
         {/* ─── Sub-pantallas del Perfil ─── */}
         <Stack.Screen name="profile/editar" options={{ headerShown: false }} />
